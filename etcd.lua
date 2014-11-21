@@ -52,8 +52,7 @@ local DEFAULT_OPTS = {
         def = false
     },
     prefix = {
-        typ = 'string',
-        def = '/app/cache/'
+        typ = 'string'
     },
     ttl = {
         typ = 'int',
