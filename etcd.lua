@@ -123,8 +123,15 @@ function Etcd:init( cli, opts )
     -- construct client api endpoints
     uri = host .. own.clientPort;
     for k, v in pairs( CLIENT_ENDPOINTS ) do
-        if k == 'keys' then
-            own.endpoints[k] = uri .. normalize( v, own.prefix );
+        -- append prefix
+        if k == 'keys' and own.prefix then
+            opt = normalize( own.prefix );
+            -- append prefix if it is not a slash.
+            if opt ~= '/' then
+                own.endpoints[k] = uri .. v .. opt;
+            else
+                own.endpoints[k] = uri .. v;
+            end
         else
             own.endpoints[k] = uri .. v;
         end
