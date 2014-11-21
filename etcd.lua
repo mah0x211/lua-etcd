@@ -73,6 +73,7 @@ local ADMIN_ENDPOINTS = {
 -- errors
 local EOPTS = 'opts.%s must be %s';
 local EINVAL = '%s must be %s';
+local EKEYPATH = 'key should not be a slash';
 local EENCODE = 'encoding error: %q';
 
 -- private
@@ -259,7 +260,13 @@ function Etcd:set( key, val, ttl )
     elseif not typeof.int( ttl ) then
         return nil, EINVAL:format( 'ttl', 'integer' );
     end
-    uri = own.endpoints.keys .. normalize( key );
+    
+    -- verify key
+    key = normalize( key );
+    if key == '/' then
+        return nil, EKEYPATH;
+    end
+    uri = own.endpoints.keys .. key;
     
     -- set ttl
     opts.body.ttl = ttl >= 0 and ttl or '';
@@ -329,7 +336,13 @@ function Etcd:mkdir( key, ttl )
     elseif not typeof.int( ttl ) then
         return nil, EINVAL:format( 'ttl', 'integer' );
     end
-    uri = own.endpoints.keys .. normalize( key );
+    
+    -- verify key
+    key = normalize( key );
+    if key == '/' then
+        return nil, EKEYPATH;
+    end
+    uri = own.endpoints.keys .. key;
     
     -- set ttl
     opts.body.ttl = ttl >= 0 and ttl or '';
