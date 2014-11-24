@@ -18,8 +18,14 @@ ifNil( cli:delete( key ) )
 res = ifNil( cli:get( key ) );
 ifNotEqual( res.status, 404 );
 
+res = ifNil( cli:setx( key, val ) );
+ifNotEqual( res.status, 404 );
+
 res = ifNil( cli:set( key, val ) );
 ifNotEqual( res.status, 201 );
+
+res = ifNil( cli:setnx( key, val ) );
+ifNotEqual( res.status, 412 );
 
 res = ifNil( cli:get( key ) );
 ifNotEqual( inspect( val ), inspect( res.body.node.value ) );
