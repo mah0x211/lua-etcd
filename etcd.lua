@@ -118,8 +118,8 @@ local function set( own, key, val, attr )
     
     if attr.dir then
         opts.body.dir = true;
-    else
-        -- encode
+    -- encode value
+    elseif val ~= nil then
         opts.body.value, err = encodeJSON( val );
         if err then
             return nil, EENCODE:format( err );
@@ -320,6 +320,7 @@ function Etcd:set( key, val, ttl )
 end
 
 
+-- set key-val and ttl if key does not exists (atomic create)
 function Etcd:setnx( key, val, ttl )
     return set( protected( self ), key, val, { 
         ttl = ttl,
@@ -328,6 +329,7 @@ function Etcd:setnx( key, val, ttl )
 end
 
 
+-- set key-val and ttl if key is exists (update)
 function Etcd:setx( key, val, ttl )
     return set( protected( self ), key, val, { 
         ttl = ttl,
