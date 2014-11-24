@@ -328,6 +328,14 @@ function Etcd:setnx( key, val, ttl )
 end
 
 
+function Etcd:setx( key, val, ttl )
+    return set( protected( self ), key, val, { 
+        ttl = ttl,
+        prevExist = true
+    });
+end
+
+
 -- in-order keys
 function Etcd:push( key, val, ttl )
     return set( protected( self ), key, val, { 
