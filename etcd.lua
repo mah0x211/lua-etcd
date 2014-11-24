@@ -90,6 +90,9 @@ end
 
 local function set( own, key, val, attr )
     local opts = {
+        query = {
+            prevExist = attr.prevExist
+        },
         body = {}
     };
     local uri, err;
@@ -312,7 +315,15 @@ end
 -- /keys
 function Etcd:set( key, val, ttl )
     return set( protected( self ), key, val, { 
-        ttl = ttl 
+        ttl = ttl
+    });
+end
+
+
+function Etcd:setnx( key, val, ttl )
+    return set( protected( self ), key, val, { 
+        ttl = ttl,
+        prevExist = false
     });
 end
 
