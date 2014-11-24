@@ -127,6 +127,32 @@ local function set( own, key, val, attr )
 end
 
 
+local function delete( own, key, attr )
+    local uri, recursive;
+    
+    -- check arguments
+    if not typeof.string( key ) then
+        return nil, EINVAL:format( 'key', 'string' );
+    end
+    uri = own.endpoints.keys .. normalize( key );
+    
+    -- check attributes
+    if attr.dir then
+        if attr.recursive == nil then
+            uri = uri .. '?dir=true';
+        elseif not typeof.boolean( attr.recursive ) then
+            return nil, EINVAL:format( 'recursive', 'boolean' );
+        elseif attr.recursive then
+            uri = uri .. '?dir=true&recursive=true';
+        else
+            uri = uri .. '?dir=true';
+        end
+    end
+    
+    return request( own.cli, 'delete', uri );
+end
+
+
 -- class
 local Etcd = require('halo').class.Etcd;
 
@@ -325,16 +351,7 @@ end
 
 
 function Etcd:delete( key )
-    local own = protected( self );
-    local uri;
-    
-    -- check arguments
-    if not typeof.string( key ) then
-        return nil, EINVAL:format( 'key', 'string' );
-    end
-    uri = own.endpoints.keys .. normalize( key );
-
-    return request( own.cli, 'delete', uri );
+    return delete( protected( self ), key, {} );
 end
 
 
@@ -370,24 +387,10 @@ end
 
 
 function Etcd:rmdir( key, recursive )
-    local own = protected( self );
-    local uri;
-    
-    -- check arguments
-    if not typeof.string( key ) then
-        return nil, EINVAL:format( 'key', 'string' );
-    elseif recursive == nil then
-        recursive = '?dir=true';
-    elseif not typeof.boolean( recursive ) then
-        return nil, EINVAL:format( 'recursive', 'boolean' );
-    elseif recursive then
-        recursive = '?dir=true&recursive=true';
-    else
-        recursive = '?dir=true';
-    end
-    uri = own.endpoints.keys .. normalize( key ) .. recursive;
-    
-    return request( own.cli, 'delete', uri );
+    return delete( protected( self ), key, {
+        dir = true,
+        recursive = recursive
+    });
 end
 
 
