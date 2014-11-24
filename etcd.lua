@@ -88,6 +88,45 @@ local function request( cli, method, uri, opts )
 end
 
 
+local function set( own, key, val, attr )
+    local opts = {
+        body = {}
+    };
+    local uri, err;
+    
+    -- check arguments
+    if not typeof.string( key ) then
+        return nil, EINVAL:format( 'key', 'string' );
+    elseif attr.ttl == nil then
+        attr.ttl = own.ttl;
+    elseif not typeof.int( attr.ttl ) then
+        return nil, EINVAL:format( 'ttl', 'integer' );
+    end
+    
+    -- verify key
+    key = normalize( key );
+    if key == '/' then
+        return nil, EKEYPATH;
+    end
+    uri = own.endpoints.keys .. key;
+    
+    -- set ttl
+    opts.body.ttl = attr.ttl >= 0 and attr.ttl or '';
+    
+    if attr.dir then
+        opts.body.dir = true;
+    else
+        -- encode
+        opts.body.value, err = encodeJSON( val );
+        if err then
+            return nil, EENCODE:format( err );
+        end
+    end
+    
+    return request( own.cli, attr.inOrder and 'post' or 'put', uri, opts );
+end
+
+
 -- class
 local Etcd = require('halo').class.Etcd;
 
@@ -246,37 +285,18 @@ end
 
 -- /keys
 function Etcd:set( key, val, ttl )
-    local own = protected( self );
-    local opts = {
-        body = {}
-    };
-    local uri, err;
-    
-    -- check arguments
-    if not typeof.string( key ) then
-        return nil, EINVAL:format( 'key', 'string' );
-    elseif ttl == nil then
-        ttl = own.ttl;
-    elseif not typeof.int( ttl ) then
-        return nil, EINVAL:format( 'ttl', 'integer' );
-    end
-    
-    -- verify key
-    key = normalize( key );
-    if key == '/' then
-        return nil, EKEYPATH;
-    end
-    uri = own.endpoints.keys .. key;
-    
-    -- set ttl
-    opts.body.ttl = ttl >= 0 and ttl or '';
-    -- encode
-    opts.body.value, err = encodeJSON( val );
-    if err then
-        return nil, EENCODE:format( err );
-    end
-    
-    return request( own.cli, 'put', uri, opts );
+    return set( protected( self ), key, val, { 
+        ttl = ttl 
+    });
+end
+
+
+-- in-order keys
+function Etcd:push( key, val, ttl )
+    return set( protected( self ), key, val, { 
+        ttl = ttl,
+        inOrder = true
+    });
 end
 
 
@@ -320,34 +340,10 @@ end
 
 -- dir
 function Etcd:mkdir( key, ttl )
-    local own = protected( self );
-    local opts = {
-        body = {
-            dir = true
-        }
-    };
-    local uri;
-    
-    -- check arguments
-    if not typeof.string( key ) then
-        return nil, EINVAL:format( 'key', 'string' );
-    elseif ttl == nil then
-        ttl = own.ttl;
-    elseif not typeof.int( ttl ) then
-        return nil, EINVAL:format( 'ttl', 'integer' );
-    end
-    
-    -- verify key
-    key = normalize( key );
-    if key == '/' then
-        return nil, EKEYPATH;
-    end
-    uri = own.endpoints.keys .. key;
-    
-    -- set ttl
-    opts.body.ttl = ttl >= 0 and ttl or '';
-    
-    return request( own.cli, 'put', uri, opts );
+    return set( protected( self ), key, nil, { 
+        ttl = ttl,
+        dir = true
+    });
 end
 
 
