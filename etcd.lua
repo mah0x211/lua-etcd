@@ -375,7 +375,8 @@ function Etcd:get( key )
     entity, err = own.cli:get( uri );
     if err then
         return nil, err;
-    elseif entity.status == 200 and entity.body.node then
+    elseif entity.status == 200 and entity.body.node and 
+           not entity.body.node.dir then
         entity.body.node.value, err = decodeJSON( entity.body.node.value );
         if err then
             return nil, err;
