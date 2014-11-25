@@ -137,7 +137,8 @@ end
 local function get( own, key, attr )
     local opts = {
         query = {
-            recursive = attr.recursive or nil
+            recursive = attr.recursive or nil,
+            consistent = attr.consistent or nil
         }
     };
     local uri, entity, err;
@@ -146,6 +147,8 @@ local function get( own, key, attr )
     if not typeof.string( key ) then
         return nil, EINVAL:format( 'key', 'string' );
     elseif attr.recursive ~= nil and not typeof.boolean( attr.recursive ) then
+        return nil, EINVAL:format( 'consistent', 'boolean' );
+    elseif attr.consistent ~= nil and not typeof.boolean( attr.consistent ) then
         return nil, EINVAL:format( 'consistent', 'boolean' );
     end
     uri = own.endpoints.keys .. normalize( key );
@@ -407,8 +410,10 @@ function Etcd:push( key, val, ttl )
 end
 
 
-function Etcd:get( key )
-    return get( protected( self ), key, {} );
+function Etcd:get( key, consistent )
+    return get( protected( self ), key, {
+        consistent = consistent
+    });
 end
 
 
@@ -441,10 +446,11 @@ function Etcd:mkdirnx( key, ttl )
 end
 
 
-function Etcd:readdir( key, recursive )
+function Etcd:readdir( key, recursive, consistent )
     return get( protected( self ), key, {
         dir = true,
-        recursive = recursive
+        recursive = recursive,
+        consistent = consistent
     });
 end
 
