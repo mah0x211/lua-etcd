@@ -23,3 +23,11 @@ sleep( ttl + 1 );
 res = ifNil( cli:readdir( '/path', true ) );
 ifNotEqual( res.status, 404 );
 
+-- mkdir if not exists
+res = ifNil( cli:mkdirnx( '/path/to/dir' ) );
+ifNotEqual( res.status, 201 );
+res = ifNil( cli:mkdirnx( '/path/to/dir' ) );
+ifNotEqual( res.status, 412 );
+
+-- cleanup
+ifNil( cli:rmdir( '/path', true ) );
