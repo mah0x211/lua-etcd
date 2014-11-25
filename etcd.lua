@@ -91,7 +91,8 @@ end
 local function set( own, key, val, attr )
     local opts = {
         query = {
-            prevExist = attr.prevExist
+            prevExist = attr.prevExist,
+            prevIndex = attr.prevIndex
         },
         body = {}
     };
@@ -100,18 +101,13 @@ local function set( own, key, val, attr )
     -- check arguments
     if not typeof.string( key ) then
         return nil, EINVAL:format( 'key', 'string' );
+    -- CAS idx
+    elseif attr.prevIndex ~= nil and not typeof.uint( attr.prevIndex ) then
+        return nil, EINVAL:format( 'modifiedIndex', 'unsigned integer' );
     elseif attr.ttl == nil then
         attr.ttl = own.ttl;
     elseif not typeof.int( attr.ttl ) then
         return nil, EINVAL:format( 'ttl', 'integer' );
-    end
-    
-    -- CAS idx
-    if attr.prevIndex ~= nil then
-        if not typeof.uint( attr.prevIndex ) then
-            return nil, EINVAL:format( 'modifiedIndex', 'unsigned integer' );
-        end
-        opts.query.prevIndex = attr.prevIndex;
     end
     
     -- verify key
