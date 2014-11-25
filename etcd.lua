@@ -135,28 +135,38 @@ end
 
 
 local function delete( own, key, attr )
+    local opts = {
+        query = {
+            dir = attr.dir,
+            prevIndex = attr.prevIndex
+        }
+    };
     local uri, recursive;
     
     -- check arguments
     if not typeof.string( key ) then
         return nil, EINVAL:format( 'key', 'string' );
+    -- CAS index
+    elseif attr.prevIndex ~= nil and not typeof.uint( attr.prevIndex ) then
+        return nil, EINVAL:format( 'modifiedIndex', 'unsigned integer' );
     end
     uri = own.endpoints.keys .. normalize( key );
     
     -- check attributes
     if attr.dir then
-        if attr.recursive == nil then
-            uri = uri .. '?dir=true';
-        elseif not typeof.boolean( attr.recursive ) then
+        if attr.recursive ~= nil and not typeof.boolean( attr.recursive ) then
             return nil, EINVAL:format( 'recursive', 'boolean' );
-        elseif attr.recursive then
-            uri = uri .. '?dir=true&recursive=true';
-        else
-            uri = uri .. '?dir=true';
+        end
+        opts.query.recursive = attr.recursive or nil;
+    -- use prevValue
+    elseif attr.prevValue ~= nil then
+        opts.query.prevValue, err = encodeJSON( attr.prevValue );
+        if err then
+            return nil, EENCODE:format( err );
         end
     end
     
-    return request( own.cli, 'delete', uri );
+    return request( own.cli, 'delete', uri, opts );
 end
 
 
@@ -376,8 +386,13 @@ function Etcd:get( key )
 end
 
 
-function Etcd:delete( key )
-    return delete( protected( self ), key, {} );
+-- delete key 
+-- atomic delete if val or modifiedIndex are not nil.
+function Etcd:delete( key, val, modifiedIndex )
+    return delete( protected( self ), key, {
+        prevValue = val,
+        prevIndex = modifiedIndex
+    });
 end
 
 
