@@ -9,6 +9,7 @@ local val = {
         }
     }
 };
+local consistent = true;
 local res;
 
 -- cleanup
@@ -27,6 +28,9 @@ res = ifNil( cli:setnx( key, val ) );
 ifNotEqual( res.status, 412 );
 
 res = ifNil( cli:get( key ) );
+ifNotEqual( inspect( val ), inspect( res.body.node.value ) );
+
+res = ifNil( cli:get( key, consistent ) );
 ifNotEqual( inspect( val ), inspect( res.body.node.value ) );
 
 res = ifNil( cli:delete( key ) );
