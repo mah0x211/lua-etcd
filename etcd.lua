@@ -385,6 +385,16 @@ function Etcd:mkdir( key, ttl )
 end
 
 
+-- mkdir if not exists
+function Etcd:mkdirnx( key, ttl )
+    return set( protected( self ), key, nil, { 
+        ttl = ttl,
+        dir = true,
+        prevExist = false
+    });
+end
+
+
 function Etcd:readdir( key, recursive )
     local own = protected( self );
     local uri;
