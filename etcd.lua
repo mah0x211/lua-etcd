@@ -425,4 +425,43 @@ function Etcd:rmdir( key, recursive )
 end
 
 
+-- set ttl for key
+function Etcd:setTTL( key, ttl )
+    local own = protected( self );
+    local uri, entity, err;
+    
+    -- check arguments
+    if not typeof.string( key ) then
+        return nil, EINVAL:format( 'key', 'string' );
+    elseif ttl == nil then
+        ttl = own.ttl;
+    elseif not typeof.int( ttl ) then
+        return nil, EINVAL:format( 'ttl', 'integer' );
+    end
+    uri = own.endpoints.keys .. normalize( key );
+    
+    -- get prev-value
+    entity, err = own.cli:get( uri );
+    if err then
+        return nil, err;
+    elseif entity.status ~= 200 then
+        return entity;
+    end
+    
+    -- update with prev-value
+    return request( own.cli, 'put', uri, {
+        query = {
+            prevValue = entity.body.node.value,
+            prevIndex = not entity.body.node.dir and entity.body.node.modifiedIndex or nil,
+            prevExist = true
+        },
+        body = {
+            ttl = ttl >= 0 and ttl or '',
+            dir = entity.body.node.dir,
+            value = entity.body.node.value
+        }
+    });
+end
+
+
 return Etcd.exports;
