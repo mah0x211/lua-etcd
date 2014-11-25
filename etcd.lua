@@ -134,6 +134,51 @@ local function set( own, key, val, attr )
 end
 
 
+local function get( own, key, attr )
+    local opts = {
+        query = {
+            recursive = attr.recursive or nil
+        }
+    };
+    local uri, entity, err;
+    
+    -- check arguments
+    if not typeof.string( key ) then
+        return nil, EINVAL:format( 'key', 'string' );
+    elseif attr.recursive ~= nil and not typeof.boolean( attr.recursive ) then
+        return nil, EINVAL:format( 'consistent', 'boolean' );
+    end
+    uri = own.endpoints.keys .. normalize( key );
+    
+    -- readdir
+    if attr.dir then
+        entity, err = own.cli:get( uri, opts );
+        if err then
+            return nil, err;
+        -- set 404 not found if result node is not directory
+        elseif entity.status == 200 and entity.body.node and 
+               not entity.body.node.dir then
+            entity.status = 404;
+            entity.body.node.dir = false;
+        end
+    -- get
+    else
+        entity, err = own.cli:get( uri, opts );
+        if err then
+            return nil, err;
+        elseif entity.status == 200 and entity.body.node and 
+               not entity.body.node.dir then
+            entity.body.node.value, err = decodeJSON( entity.body.node.value );
+            if err then
+                return nil, err;
+            end
+        end
+    end
+    
+    return entity;
+end
+
+
 local function delete( own, key, attr )
     local opts = {
         query = {
@@ -363,27 +408,7 @@ end
 
 
 function Etcd:get( key )
-    local own = protected( self );
-    local uri, entity, err;
-    
-    -- check arguments
-    if not typeof.string( key ) then
-        return nil, EINVAL:format( 'key', 'string' );
-    end
-    uri = own.endpoints.keys .. normalize( key );
-    
-    entity, err = own.cli:get( uri );
-    if err then
-        return nil, err;
-    elseif entity.status == 200 and entity.body.node and 
-           not entity.body.node.dir then
-        entity.body.node.value, err = decodeJSON( entity.body.node.value );
-        if err then
-            return nil, err;
-        end
-    end
-    
-    return entity;
+    return get( protected( self ), key, {} );
 end
 
 
@@ -417,24 +442,10 @@ end
 
 
 function Etcd:readdir( key, recursive )
-    local own = protected( self );
-    local uri;
-    
-    -- check arguments
-    if not typeof.string( key ) then
-        return nil, EINVAL:format( 'key', 'string' );
-    elseif recursive == nil then
-        recursive = '';
-    elseif not typeof.boolean( recursive ) then
-        return nil, EINVAL:format( 'recursive', 'boolean' );
-    elseif recursive then
-        recursive = '?recursive=true';
-    else
-        recursive = '';
-    end
-    uri = own.endpoints.keys .. normalize( key ) .. recursive;
-    
-    return request( own.cli, 'get', uri );
+    return get( protected( self ), key, {
+        dir = true,
+        recursive = recursive
+    });
 end
 
 
