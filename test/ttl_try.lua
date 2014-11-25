@@ -1,7 +1,7 @@
 local Etcd = require('etcd.luasocket');
 
 local cli = ifNil( Etcd.new() );
-local ttl = 2;
+local ttl = 1;
 local res;
 
 -- cleanup
@@ -45,6 +45,25 @@ sleep( ttl + 1 );
 res = ifNil( cli:get( '/path/to/key' ) );
 ifNotEqual( res.status, 404 );
 
+
+-- queue
+res = ifNil( cli:mkdir( '/path/to/dir' ) );
+ifNotEqual( res.status, 201 );
+
+res = ifNil( cli:push( '/path/to/dir', 'q1' ) );
+ifNotEqual( res.status, 201 );
+
+res = ifNil( cli:push( '/path/to/dir', 'q2', ttl ) );
+ifNotEqual( res.status, 201 );
+
+res = ifNil( cli:readdir( '/path/to/dir' ) );
+ifNotEqual( res.status, 200 );
+ifNotEqual( #res.body.node.nodes, 2 );
+
+sleep( ttl + 1 );
+res = ifNil( cli:readdir( '/path/to/dir' ) );
+ifNotEqual( res.status, 200 );
+ifNotEqual( #res.body.node.nodes, 1 );
 
 -- cleanup
 ifNil( cli:rmdir( '/path', true ) );
