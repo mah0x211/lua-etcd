@@ -106,6 +106,14 @@ local function set( own, key, val, attr )
         return nil, EINVAL:format( 'ttl', 'integer' );
     end
     
+    -- CAS idx
+    if attr.prevIndex ~= nil then
+        if not typeof.uint( attr.prevIndex ) then
+            return nil, EINVAL:format( 'modifiedIndex', 'unsigned integer' );
+        end
+        opts.query.prevIndex = attr.prevIndex;
+    end
+    
     -- verify key
     key = normalize( key );
     if key == '/' then
@@ -330,10 +338,11 @@ end
 
 
 -- set key-val and ttl if key is exists (update)
-function Etcd:setx( key, val, ttl )
+function Etcd:setx( key, val, ttl, modifiedIndex )
     return set( protected( self ), key, val, { 
         ttl = ttl,
-        prevExist = true
+        prevExist = true,
+        prevIndex = modifiedIndex
     });
 end
 
