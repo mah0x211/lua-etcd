@@ -138,6 +138,7 @@ local function get( own, key, attr )
     local opts = {
         query = {
             wait = attr.wait or nil,
+            waitIndex = attr.waitIndex or nil,
             recursive = attr.recursive or nil,
             consistent = attr.consistent or nil
         }
@@ -151,6 +152,8 @@ local function get( own, key, attr )
         return nil, EINVAL:format( 'timeout', 'unsigned integer' );
     elseif attr.wait ~= nil and not typeof.boolean( attr.wait ) then
         return nil, EINVAL:format( 'wait', 'boolean' );
+    elseif attr.waitIndex ~= nil and not typeof.uint( attr.waitIndex ) then
+        return nil, EINVAL:format( 'wait', 'unsigned integer' );
     elseif attr.recursive ~= nil and not typeof.boolean( attr.recursive ) then
         return nil, EINVAL:format( 'recursive', 'boolean' );
     elseif attr.consistent ~= nil and not typeof.boolean( attr.consistent ) then
