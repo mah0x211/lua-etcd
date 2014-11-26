@@ -153,7 +153,7 @@ local function get( own, key, attr )
     elseif attr.wait ~= nil and not typeof.boolean( attr.wait ) then
         return nil, EINVAL:format( 'wait', 'boolean' );
     elseif attr.waitIndex ~= nil and not typeof.uint( attr.waitIndex ) then
-        return nil, EINVAL:format( 'wait', 'unsigned integer' );
+        return nil, EINVAL:format( 'waitIndex', 'unsigned integer' );
     elseif attr.recursive ~= nil and not typeof.boolean( attr.recursive ) then
         return nil, EINVAL:format( 'recursive', 'boolean' );
     elseif attr.consistent ~= nil and not typeof.boolean( attr.consistent ) then
