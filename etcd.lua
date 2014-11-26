@@ -483,6 +483,19 @@ function Etcd:rmdir( key, recursive )
 end
 
 
+-- wait with recursive
+function Etcd:waitdir( key, modifiedIndex, timeout )
+    local own = protected( self );
+    
+    return get( protected( self ), key, {
+        wait = true,
+        recursive = true,
+        waitIndex = modifiedIndex,
+        timeout = timeout
+    });
+end
+
+
 -- set ttl for key
 function Etcd:setTTL( key, ttl )
     local own = protected( self );
