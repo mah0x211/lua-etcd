@@ -435,6 +435,18 @@ function Etcd:delete( key, val, modifiedIndex )
 end
 
 
+-- wait
+function Etcd:wait( key, modifiedIndex, timeout )
+    local own = protected( self );
+    
+    return get( protected( self ), key, {
+        wait = true,
+        waitIndex = modifiedIndex,
+        timeout = timeout
+    });
+end
+
+
 -- dir
 function Etcd:mkdir( key, ttl )
     return set( protected( self ), key, nil, { 
