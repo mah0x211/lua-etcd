@@ -15,7 +15,7 @@ dependencies = {
     "util >= 1.1",
     "path >= 1.0",
     "lua-cjson >= 2.1.0",
-    "httpcli >= 1.1-1"
+    "httpcli >= 1.1.2"
 }
 build = {
     type = "builtin",
