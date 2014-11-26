@@ -147,6 +147,8 @@ local function get( own, key, attr )
     -- check arguments
     if not typeof.string( key ) then
         return nil, EINVAL:format( 'key', 'string' );
+    elseif attr.timeout ~= nil and not typeof.uint( attr.timeout ) then
+        return nil, EINVAL:format( 'timeout', 'unsigned integer' );
     elseif attr.wait ~= nil and not typeof.boolean( attr.wait ) then
         return nil, EINVAL:format( 'wait', 'boolean' );
     elseif attr.recursive ~= nil and not typeof.boolean( attr.recursive ) then
@@ -158,7 +160,7 @@ local function get( own, key, attr )
     
     -- readdir
     if attr.dir then
-        entity, err = own.cli:get( uri, opts );
+        entity, err = own.cli:get( uri, opts, attr.timeout );
         if err then
             return nil, err;
         -- set 404 not found if result node is not directory
@@ -169,7 +171,7 @@ local function get( own, key, attr )
         end
     -- get
     else
-        entity, err = own.cli:get( uri, opts );
+        entity, err = own.cli:get( uri, opts, attr.timeout );
         if err then
             return nil, err;
         elseif entity.status == 200 and entity.body.node and 
