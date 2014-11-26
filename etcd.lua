@@ -137,6 +137,7 @@ end
 local function get( own, key, attr )
     local opts = {
         query = {
+            wait = attr.wait or nil,
             recursive = attr.recursive or nil,
             consistent = attr.consistent or nil
         }
@@ -146,6 +147,8 @@ local function get( own, key, attr )
     -- check arguments
     if not typeof.string( key ) then
         return nil, EINVAL:format( 'key', 'string' );
+    elseif attr.wait ~= nil and not typeof.boolean( attr.wait ) then
+        return nil, EINVAL:format( 'wait', 'boolean' );
     elseif attr.recursive ~= nil and not typeof.boolean( attr.recursive ) then
         return nil, EINVAL:format( 'recursive', 'boolean' );
     elseif attr.consistent ~= nil and not typeof.boolean( attr.consistent ) then
