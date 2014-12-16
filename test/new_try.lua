@@ -18,38 +18,17 @@ ifNotNil( Etcd.new({
     host = 0
 }));
 ifNil( Etcd.new({
-    host = '127.0.0.1'
+    host = 'http://127.0.0.1:4001'
 }));
 
--- clientPort must be uint
+-- peer must be string
 ifNotNil( Etcd.new({
-    clientPort = ''
-}));
-ifNotNil( Etcd.new({
-    clientPort = -1
+    peer = 0
 }));
 ifNil( Etcd.new({
-    clientPort = 8000
+    peer = 'http://127.0.0.1:7001'
 }));
 
--- adminPort must be uint
-ifNotNil( Etcd.new({
-    adminPort = ''
-}));
-ifNotNil( Etcd.new({
-    adminPort = -1
-}));
-ifNil( Etcd.new({
-    adminPort = 8000
-}));
-
--- https must be boolean
-ifNotNil( Etcd.new({
-    https = ''
-}));
-ifNil( Etcd.new({
-    https = false
-}));
 
 -- prefix must be string
 ifNotNil( Etcd.new({
