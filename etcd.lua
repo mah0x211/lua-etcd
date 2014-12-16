@@ -37,19 +37,11 @@ local decodeJSON = require('cjson.safe').decode;
 local DEFAULT_OPTS = {
     host = {
         typ = 'string',
-        def = '127.0.0.1'
+        def = 'http://127.0.0.1:4001'
     },
-    clientPort = {
-        typ = 'uint',
-        def = 4001
-    },
-    adminPort = {
-        typ = 'uint',
-        def = 7001
-    },
-    https = {
-        typ = 'boolean',
-        def = false
+    peer = {
+        typ = 'string',
+        def = 'http://127.0.0.1:7001'
     },
     prefix = {
         typ = 'string'
@@ -77,6 +69,36 @@ local EKEYPATH = 'key should not be a slash';
 local EENCODE = 'encoding error: %q';
 
 -- private
+local function createEndpoints( host, peer, prefix )
+    local endpoints = {};
+    local uri, opt;
+    
+    -- construct client api endpoints
+    uri = host;
+    for k, v in pairs( CLIENT_ENDPOINTS ) do
+        -- append prefix
+        if k == 'keys' and prefix then
+            opt = prefix;
+            -- append prefix if it is not a slash.
+            if opt ~= '/' then
+                endpoints[k] = uri .. v .. opt;
+            else
+                endpoints[k] = uri .. v;
+            end
+        else
+            endpoints[k] = uri .. v;
+        end
+    end
+    -- construct admin api endpoints
+    uri = peer;
+    for k, v in pairs( ADMIN_ENDPOINTS ) do
+        endpoints[k] = uri .. v;
+    end
+    
+    return endpoints;
+end
+
+
 local function request( cli, method, uri, opts, timeout )
     local entity, err = cli[method]( cli, uri, opts, timeout );
     
@@ -227,7 +249,7 @@ local Etcd = require('halo').class.Etcd;
 
 function Etcd:init( cli, opts )
     local own = protected( self );
-    local opt, host, uri;
+    local opt;
     
     -- set http-client instance
     own.cli = cli;
@@ -250,30 +272,11 @@ function Etcd:init( cli, opts )
         end
     end
     
-    -- construct endpoints
-    host = 'http' .. ( own.https and 's://' or '://' ) .. own.host .. ':';
-    own.endpoints = {};
-    -- construct client api endpoints
-    uri = host .. own.clientPort;
-    for k, v in pairs( CLIENT_ENDPOINTS ) do
-        -- append prefix
-        if k == 'keys' and own.prefix then
-            opt = normalize( own.prefix );
-            -- append prefix if it is not a slash.
-            if opt ~= '/' then
-                own.endpoints[k] = uri .. v .. opt;
-            else
-                own.endpoints[k] = uri .. v;
-            end
-        else
-            own.endpoints[k] = uri .. v;
-        end
+    -- normalize prefix
+    if own.prefix then
+        own.prefix = normalize( own.prefix );
     end
-    -- construct admin api endpoints
-    uri = host .. own.adminPort;
-    for k, v in pairs( ADMIN_ENDPOINTS ) do
-        own.endpoints[k] = uri .. v;
-    end
+    own.endpoints = createEndpoints( own.host, own.peer, own.prefix );
     
     return self;
 end
