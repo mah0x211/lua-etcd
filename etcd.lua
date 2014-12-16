@@ -161,28 +161,23 @@ local function get( own, key, attr )
     end
     uri = own.endpoints.keys .. normalize( key );
     
+    entity, err = own.cli:get( uri, opts, attr.timeout );
+    if err then
+        return nil, err;
     -- readdir
-    if attr.dir then
-        entity, err = own.cli:get( uri, opts, attr.timeout );
-        if err then
-            return nil, err;
+    elseif attr.dir then
         -- set 404 not found if result node is not directory
-        elseif entity.status == 200 and entity.body.node and 
+        if entity.status == 200 and entity.body.node and 
                not entity.body.node.dir then
             entity.status = 404;
             entity.body.node.dir = false;
         end
     -- get
-    else
-        entity, err = own.cli:get( uri, opts, attr.timeout );
+    elseif entity.status == 200 and entity.body.node and 
+           not entity.body.node.dir then
+        entity.body.node.value, err = decodeJSON( entity.body.node.value );
         if err then
             return nil, err;
-        elseif entity.status == 200 and entity.body.node and 
-               not entity.body.node.dir then
-            entity.body.node.value, err = decodeJSON( entity.body.node.value );
-            if err then
-                return nil, err;
-            end
         end
     end
     
