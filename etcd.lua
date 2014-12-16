@@ -77,8 +77,8 @@ local EKEYPATH = 'key should not be a slash';
 local EENCODE = 'encoding error: %q';
 
 -- private
-local function request( cli, method, uri, opts )
-    local entity, err = cli[method]( cli, uri, opts );
+local function request( cli, method, uri, opts, timeout )
+    local entity, err = cli[method]( cli, uri, opts, timeout );
     
     if err then
         return nil, err;
@@ -161,7 +161,7 @@ local function get( own, key, attr )
     end
     uri = own.endpoints.keys .. normalize( key );
     
-    entity, err = own.cli:get( uri, opts, attr.timeout );
+    entity, err = request( own.cli, 'get', uri, opts, attr.timeout );
     if err then
         return nil, err;
     -- readdir
@@ -507,7 +507,7 @@ function Etcd:setTTL( key, ttl )
     uri = own.endpoints.keys .. normalize( key );
     
     -- get prev-value
-    entity, err = own.cli:get( uri );
+    entity, err = request( own.cli, 'get', uri );
     if err then
         return nil, err;
     elseif entity.status ~= 200 then
