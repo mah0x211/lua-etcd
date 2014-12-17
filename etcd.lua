@@ -108,8 +108,8 @@ local function createEndpoints( host, peer, prefix )
 end
 
 
-local function request( cli, method, uri, opts, timeout )
-    local entity, err = cli[method]( cli, uri, opts, timeout );
+local function request( own, method, uri, opts, timeout )
+    local entity, err = own.cli[method]( own.cli, uri, opts, timeout );
     
     if err then
         return nil, err;
@@ -161,7 +161,7 @@ local function set( own, key, val, attr )
         end
     end
     
-    return request( own.cli, attr.inOrder and 'post' or 'put', uri, opts );
+    return request( own, attr.inOrder and 'post' or 'put', uri, opts );
 end
 
 
@@ -192,7 +192,7 @@ local function get( own, key, attr )
     end
     uri = own.endpoints.keys .. normalize( key );
     
-    entity, err = request( own.cli, 'get', uri, opts, attr.timeout );
+    entity, err = request( own, 'get', uri, opts, attr.timeout );
     if err then
         return nil, err;
     -- readdir
@@ -248,7 +248,7 @@ local function delete( own, key, attr )
         end
     end
     
-    return request( own.cli, 'delete', uri, opts );
+    return request( own, 'delete', uri, opts );
 end
 
 
@@ -294,24 +294,24 @@ end
 -- /version
 function Etcd:version()
     local own = protected( self );
-    return request( own.cli, 'get', own.endpoints.version );
+    return request( own, 'get', own.endpoints.version );
 end
 
 
 -- /stats
 function Etcd:statsLeader()
     local own = protected( self );
-    return request( own.cli, 'get', own.endpoints.statsLeader );
+    return request( own, 'get', own.endpoints.statsLeader );
 end
 
 function Etcd:statsSelf()
     local own = protected( self );
-    return request( own.cli, 'get', own.endpoints.statsSelf );
+    return request( own, 'get', own.endpoints.statsSelf )
 end
 
 function Etcd:statsStore()
     local own = protected( self );
-    return request( own.cli, 'get', own.endpoints.statsStore );
+    return request( own, 'get', own.endpoints.statsStore );
 end
 
 
@@ -330,7 +330,7 @@ function Etcd:adminMachines( name )
         end
     end
     
-    return request( own.cli, 'get', uri );
+    return request( own, 'get', uri );
 end
 
 
@@ -348,14 +348,14 @@ function Etcd:removeAdminMachines( name )
         end
     end
     
-    return request( own.cli, 'delete', uri );
+    return request( own, 'delete', uri );
 end
 
 
 -- /admin/config
 function Etcd:adminConfig()
     local own = protected( self );
-    return request( own.cli, 'get', own.endpoints.adminConfig );
+    return request( own, 'get', own.endpoints.adminConfig );
 end
 
 
@@ -382,7 +382,7 @@ function Etcd:setAdminConfig( opts )
         end
     end
     
-    return request( own.cli, 'put', own.endpoints.adminConfig, {
+    return request( own, 'put', own.endpoints.adminConfig, {
         body = cfg,
         enctype = 'application/json'
     });
@@ -519,7 +519,7 @@ function Etcd:setTTL( key, ttl )
     uri = own.endpoints.keys .. normalize( key );
     
     -- get prev-value
-    entity, err = request( own.cli, 'get', uri );
+    entity, err = request( own, 'get', uri );
     if err then
         return nil, err;
     elseif entity.status ~= 200 then
@@ -527,7 +527,7 @@ function Etcd:setTTL( key, ttl )
     end
     
     -- update with prev-value
-    return request( own.cli, 'put', uri, {
+    return request( own, 'put', uri, {
         query = {
             prevValue = entity.body.node.value,
             prevIndex = not entity.body.node.dir and entity.body.node.modifiedIndex or nil,
