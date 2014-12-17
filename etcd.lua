@@ -328,7 +328,7 @@ function Etcd:adminMachines( name )
         end
         name = normalize( name );
         if name ~= '/' then
-            uri = uri .. own.endpoints.adminMachines .. name;
+            uri = uri .. name;
         end
     end
     
@@ -346,7 +346,7 @@ function Etcd:removeAdminMachines( name )
         end
         name = normalize( name );
         if name ~= '/' then
-            uri = uri .. own.endpoints.adminMachines .. name;
+            uri = uri .. name;
         end
     end
     
