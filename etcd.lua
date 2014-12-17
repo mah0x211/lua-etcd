@@ -286,6 +286,8 @@ function Etcd:init( cli, opts )
         own.prefix = normalize( own.prefix );
     end
     own.endpoints = createEndpoints( own.host, own.peer, own.prefix );
+    -- remove host and peer field
+    own.host, own.peer = nil, nil;
     
     return self;
 end
