@@ -68,13 +68,12 @@ local EINVAL = '%s must be %s';
 local EKEYPATH = 'key should not be a slash';
 local EENCODE = 'encoding error: %q';
 
+
 -- private
-local function createEndpoints( host, peer, prefix )
-    local endpoints = {};
-    local uri, opt;
+local function initClientEndpoints( endpoints, uri, prefix )
+    local opt;
     
     -- construct client api endpoints
-    uri = host;
     for k, v in pairs( CLIENT_ENDPOINTS ) do
         -- append prefix
         if k == 'keys' and prefix then
@@ -89,11 +88,21 @@ local function createEndpoints( host, peer, prefix )
             endpoints[k] = uri .. v;
         end
     end
-    -- construct admin api endpoints
-    uri = peer;
+end
+
+
+local function initAdminEndpoints( endpoints, uri )
     for k, v in pairs( ADMIN_ENDPOINTS ) do
         endpoints[k] = uri .. v;
     end
+end
+
+
+local function createEndpoints( host, peer, prefix )
+    local endpoints = {};
+    
+    initClientEndpoints( endpoints, host, prefix );
+    initAdminEndpoints( endpoints, peer );
     
     return endpoints;
 end
