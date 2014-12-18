@@ -108,14 +108,73 @@ local function createEndpoints( host, peer, prefix )
 end
 
 
-local function request( own, method, uri, opts, timeout )
-    local entity, err = own.cli[method]( own.cli, uri, opts, timeout );
+local function initFailoverURIs( own, request )
+    -- fetch machine list
+    local entity, err = request( own, 'get', own.endpoints.adminMachines, {
+        failover = own.failover.peer
+    }, nil, true, true );
+    local clientFailover, peerFailover;
     
     if err then
-        return nil, err;
+        return false, err;
+    elseif entity.status ~= 200 then
+        return false, 'failed to request: ' .. entity.status;
     end
     
-    return entity;
+    -- construct failover table
+    clientFailover, peerFailover = {}, {};
+    for _, node in ipairs( entity.body ) do
+        -- re-construct endpoints
+        if node.state == 'leader' then
+            own.endpoints = createEndpoints( 
+                node.clientURL, node.peerURL, own.prefix 
+            );
+        elseif node.state == 'follower' then
+            clientFailover[#clientFailover+1] = node.clientURL;
+            peerFailover[#peerFailover+1] = node.peerURL
+        end
+    end
+    own.failover = {
+        client = clientFailover,
+        peer = peerFailover
+    };
+    
+    return true;
+end
+
+
+local function request( own, method, uri, opts, timeout, isPeer, noInitFailover )
+    local entity, err, host;
+    
+    while 1 do
+        entity, err = own.cli[method]( own.cli, uri, opts, timeout );
+        
+        if err then
+            return nil, err;
+        -- redirect to leader node
+        elseif entity.status == 307 and entity.header.location then
+            uri = entity.header.location;
+            -- re-construct endpoints
+            host = uri:match('^https*://[^/]+');
+            if host then
+                if isPeer == true then
+                    initAdminEndpoints( own.endpoints, host );
+                else
+                    initClientEndpoints( own.endpoints, host, own.prefix );
+                end
+            end
+        else
+            -- set failover uri
+            if host then
+                entity.failover = host;
+                if noInitFailover ~= true then
+                    entity.initFailoverURIs, err = initFailoverURIs( own, request );
+                end
+            end
+            
+            return entity;
+        end
+    end
 end
 
 
@@ -125,7 +184,8 @@ local function set( own, key, val, attr )
             prevExist = attr.prevExist,
             prevIndex = attr.prevIndex
         },
-        body = {}
+        body = {},
+        failover = own.failover.client
     };
     local uri, err;
     
@@ -172,7 +232,8 @@ local function get( own, key, attr )
             waitIndex = attr.waitIndex or nil,
             recursive = attr.recursive or nil,
             consistent = attr.consistent or nil
-        }
+        },
+        failover = own.failover.client
     };
     local uri, entity, err;
     
@@ -288,6 +349,8 @@ function Etcd:init( cli, opts )
     own.endpoints = createEndpoints( own.host, own.peer, own.prefix );
     -- remove host and peer field
     own.host, own.peer = nil, nil;
+    -- set empty failover table
+    own.failover = {};
     
     return self;
 end
@@ -296,24 +359,37 @@ end
 -- /version
 function Etcd:version()
     local own = protected( self );
-    return request( own, 'get', own.endpoints.version );
+    return request( own, 'get', own.endpoints.version, {
+        failover = own.failover.client
+    });
+end
+
+
+function Etcd:initFailoverURIs()
+    return initFailoverURIs( protected(self), request );
 end
 
 
 -- /stats
 function Etcd:statsLeader()
     local own = protected( self );
-    return request( own, 'get', own.endpoints.statsLeader );
+    return request( own, 'get', own.endpoints.statsLeader, {
+        failover = own.failover.client
+    });
 end
 
 function Etcd:statsSelf()
     local own = protected( self );
-    return request( own, 'get', own.endpoints.statsSelf )
+    return request( own, 'get', own.endpoints.statsSelf, {
+        failover = own.failover.client
+    })
 end
 
 function Etcd:statsStore()
     local own = protected( self );
-    return request( own, 'get', own.endpoints.statsStore );
+    return request( own, 'get', own.endpoints.statsStore, {
+        failover = own.failover.client
+    });
 end
 
 
@@ -332,7 +408,9 @@ function Etcd:adminMachines( name )
         end
     end
     
-    return request( own, 'get', uri );
+    return request( own, 'get', uri, {
+        failover = own.failover.peer
+    }, nil, true );
 end
 
 
@@ -350,14 +428,18 @@ function Etcd:removeAdminMachines( name )
         end
     end
     
-    return request( own, 'delete', uri );
+    return request( own, 'delete', uri, {
+        failover = own.failover.peer
+    }, nil, true );
 end
 
 
 -- /admin/config
 function Etcd:adminConfig()
     local own = protected( self );
-    return request( own, 'get', own.endpoints.adminConfig );
+    return request( own, 'get', own.endpoints.adminConfig, {
+        failover = own.failover.peer
+    }, nil, true );
 end
 
 
@@ -386,8 +468,9 @@ function Etcd:setAdminConfig( opts )
     
     return request( own, 'put', own.endpoints.adminConfig, {
         body = cfg,
-        enctype = 'application/json'
-    });
+        enctype = 'application/json',
+        failover = own.failover.peer
+    }, nil, true );
 end
 
 
@@ -521,7 +604,9 @@ function Etcd:setTTL( key, ttl )
     uri = own.endpoints.keys .. normalize( key );
     
     -- get prev-value
-    entity, err = request( own, 'get', uri );
+    entity, err = request( own, 'get', uri, {
+        failover = own.failover.client
+    });
     if err then
         return nil, err;
     elseif entity.status ~= 200 then
@@ -532,14 +617,16 @@ function Etcd:setTTL( key, ttl )
     return request( own, 'put', uri, {
         query = {
             prevValue = entity.body.node.value,
-            prevIndex = not entity.body.node.dir and entity.body.node.modifiedIndex or nil,
+            prevIndex = not entity.body.node.dir and 
+                        entity.body.node.modifiedIndex or nil,
             prevExist = true
         },
         body = {
             ttl = ttl >= 0 and ttl or '',
             dir = entity.body.node.dir,
             value = entity.body.node.value
-        }
+        },
+        failover = own.failover.client
     });
 end
 
