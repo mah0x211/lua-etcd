@@ -1,10 +1,37 @@
 local ETCD = {};
+
+local function printMessage( chd )
+    local msg = chd:stdout();
+    local chunk = {};
+    
+    while msg do
+        chunk[#chunk+1] = msg;
+        msg = chd:stdout();
+    end
+    if #chunk > 0 then
+        print( table.concat( chunk ) );
+        chunk = {};
+    end
+    
+    msg = chd:stderr();
+    while msg do
+        chunk[#chunk+1] = msg;
+        msg = chd:stderr();
+    end
+    if #chunk > 0 then
+        print( table.concat( chunk ) );
+        chunk = {};
+    end
+end
+
 do
+    local waitpid = require('process').waitpid;
+    local WNOHANG = require('process').WNOHANG;
     local NETCD = 5;
     local ADDR = '127.0.0.1:400';
     local PEER = '127.0.0.1:700';
     local label = 'machine';
-    local args, name, peers;
+    local args, name, peers, stat, msg, failed;
     
     for idx = 1, NETCD do
         name = label .. idx;
@@ -16,19 +43,31 @@ do
         };
         
         -- set peers
-        peers = {};
-        for j = 1, NETCD do
-            if j ~= idx then
-                peers[#peers+1] = PEER .. j;
+        if idx > 1 then
+            peers = {};
+            for j = 1, NETCD do
+                if j ~= idx then
+                    peers[#peers+1] = PEER .. j;
+                end
             end
+            args[#args+1] = '-peers';
+            args[#args+1] = table.concat( peers, ',' );
         end
-        args[#args+1] = '-peers';
-        args[#args+1] = table.concat( peers, ',' );
-        --print( 'exec: etcd ' .. table.concat( args, ' ' ) );
+        print( 'exec: etcd ' .. table.concat( args, ' ' ) );
         ETCD[name] = ifNil( execChild( 'etcd', args ) );
         sleep(1);
     end
-    sleep(1);
+    
+    -- check process
+    for k, chd in pairs( ETCD ) do
+        stat = ifNil( waitpid( chd:pid(), WNOHANG ) );
+        if stat.exit then
+            failed = true;
+            print( 'failed to exec ' .. k );
+            printMessage( chd );
+        end
+    end
+    ifTrue( failed );
 end
 
 -- default etcd endpoint
