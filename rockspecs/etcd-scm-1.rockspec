@@ -11,11 +11,11 @@ description = {
 }
 dependencies = {
     "lua >= 5.1",
-    "halo >= 1.1",
-    "util >= 1.1",
-    "path >= 1.0",
+    "halo >= 1.1.0",
+    "httpcli >= 1.2.1",
     "lua-cjson >= 2.1.0",
-    "httpcli >= 1.1.2"
+    "path >= 1.0.1",
+    "util >= 1.2.1"
 }
 build = {
     type = "builtin",
