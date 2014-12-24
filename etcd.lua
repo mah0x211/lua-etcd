@@ -163,15 +163,22 @@ local function request( own, method, uri, opts, timeout, isPeer, noInitFailover 
                     initClientEndpoints( own.endpoints, host, own.prefix );
                 end
             end
-        else
-            -- set failover uri
-            if host then
-                entity.failover = host;
-                if noInitFailover ~= true then
-                    entity.initFailoverURIs, err = initFailoverURIs( own, request );
-                end
+        -- set failover uri
+        elseif host then
+            entity.failover = host;
+            -- init failover uris
+            if noInitFailover ~= true then
+                entity.initFailoverURIs, err = initFailoverURIs( own, request );
             end
             
+            return entity;
+        -- init failover uris if failover uris is nil automatically
+        elseif noInitFailover ~= true and
+               ( not own.failover.client or not own.failover.peer ) then
+            entity.initFailoverURIs, err = initFailoverURIs( own, request );
+            return entity;
+        -- return result entity
+        else
             return entity;
         end
     end
