@@ -53,7 +53,7 @@ do
             args[#args+1] = '-peers';
             args[#args+1] = table.concat( peers, ',' );
         end
-        print( 'exec: etcd ' .. table.concat( args, ' ' ) );
+        --print( 'exec: etcd ' .. table.concat( args, ' ' ) );
         ETCD[name] = ifNil( execChild( 'etcd', args ) );
         sleep(1);
     end
