@@ -17,7 +17,7 @@ this module supports etcd API v2.
 ## Installation
 
 ```sh
-luarocks install --from=http://mah0x211.github.io/rocks/ etcd
+luarocks install etcd --from=http://mah0x211.github.io/rocks/
 ```
 
 ## Built-in module
@@ -45,9 +45,8 @@ local cli, err = Etcd.new();
 **Parameters**
 
 - `option:table`
-  - `host`: string - default `'127.0.0.1'`
-  - `clientPort`: uint - default `4001`
-  - `adminPort`: uint - default `7001`
+  - `host`: string - default `http://127.0.0.1:4001`
+  - `peer`: string - default `http://127.0.0.1:7001`
   - `ttl`: int - default `-1`  
     default ttl for key operation. set -1 to disable ttl.
   - `prefix`: string  
