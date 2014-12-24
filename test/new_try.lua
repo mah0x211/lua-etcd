@@ -1,3 +1,5 @@
+ifNil( execChild('etcd') );
+sleep(1);
 local Etcd = require('etcd.luasocket');
 
 -- opt must be table or nil

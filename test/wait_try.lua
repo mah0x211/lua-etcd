@@ -1,6 +1,7 @@
+ifNil( execChild('etcd') );
+sleep(1);
 local fork = require('process').fork;
 local Etcd = require('etcd.luasocket');
-
 -- with default timeout 3 sec
 local cli = ifNil( Etcd.new({
     timeout = 5
