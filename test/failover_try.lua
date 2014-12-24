@@ -100,10 +100,8 @@ local function stopLeader()
 end
 
 
-ifNotTrue( cli:initFailoverURIs() );
-
 -- cleanup
-ifNil( cli:delete( key ) )
+ifNil( cli:delete( key ) );
 
 res = ifNil( cli:get( key ) );
 ifNotEqual( res.status, 404 );
