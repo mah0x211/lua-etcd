@@ -282,7 +282,8 @@ local function delete( own, key, attr )
         query = {
             dir = attr.dir,
             prevIndex = attr.prevIndex
-        }
+        },
+        failover = own.failover.client
     };
     local uri, recursive;
     
